@@ -1,23 +1,25 @@
 import requests
 import subprocess
 import sys
+from tqdm import tqdm
 
 
 local_filename = "discord_linux.tar.gz"
 
 def download():
     file_url = "https://discord.com/api/download?platform=linux&format=tar.gz"
-    print("Downloading...")
-    response = requests.get(file_url, stream=True)
-    if response.status_code == 200:
-        with open(local_filename, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:
-                    file.write(chunk)
-        print(f"Downloaded {local_filename} successfully.")
-    else:
-        print(f"Failed to download. Status code: {response.status_code}")
-        sys.exit(1)
+    resp = requests.get(file_url, stream=True)
+    total = int(resp.headers.get('content-length', 0))
+    with open(local_filename, 'wb') as file, tqdm(
+        desc=local_filename,
+        total=total,
+        unit='iB',
+        unit_scale=True,
+        unit_divisor=1024,
+    ) as bar:
+        for data in resp.iter_content(chunk_size=1024):
+            size = file.write(data)
+            bar.update(size)
 
 def unzip():
     try:
